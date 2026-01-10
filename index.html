@@ -1,0 +1,1283 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ABIN AI</title>
+  <!-- PDF.js (📄 gusoma PDF content) -->
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<link rel="icon" sizes="192x192" href="https://i.postimg.cc/LXHKSshm/logo-og-prove.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+  :root{ --transition:.25s; }
+  [data-theme="midnight"]{ --bg:#0d0d0d; --panel:#1f2240; --muted:rgba(255,255,255,0.6); --accent:#33ffc4; --accent-2:#00bfa5; --bubble-user:#14387d; --bubble-ai:#292957; --text:#f0f0ff; }
+  [data-theme="sunset"] { --bg:#1f0f19; --panel:#3a1b2b; --muted:rgba(255,255,255,0.85); --accent:#ff7ba0; --accent-2:#ff5f8a; --bubble-user:#6b2a5b; --bubble-ai:#4b2240; --text:#ffeef6; }
+  [data-theme="forest"] { --bg:#07120b; --panel:#122815; --muted:rgba(255,255,255,0.85); --accent:#57ff7b; --accent-2:#29dd4a; --bubble-user:#0b5a29; --bubble-ai:#113a24; --text:#eaffea; }
+  [data-theme="ocean"]  { --bg:#031a24; --panel:#0b3040; --muted:rgba(255,255,255,0.9); --accent:#41bfff; --accent-2:#1ea6ff; --bubble-user:#065d7b; --bubble-ai:#073e5a; --text:#e7f8ff; }
+  [data-theme="amber"]  { --bg:#1b1608; --panel:#2d2208;
+     --muted:rgba(255,255,255,0.95); --accent:#ffb52e; --accent-2:#f59e00; --bubble-user:#6b4a0e; --bubble-ai:#4e3710; --text:#fff7e6; }
+
+  /* Scroll option yakuweho: Ubu page yose irascrolla */
+  html, body{
+  height:100%;
+  margin:0;
+  overflow:hidden; /* 🚫 no page scroll */
+  background:var(--bg); color:var(--text); transition:background var(--transition),color var(--transition);
+}
+
+  
+  header{width:100%;display:flex;align-items:left;justify-content:left;position:sticky;top:0;padding:12px 10px;border-radius:10px;background:var(--panel);box-shadow:0 6px 20px rgba(0,0,0,0.5);margin-bottom:10px;z-index:10;}
+header h1{margin:0;font-size:1.25rem;letter-spacing:1px;color:var(--accent);font-weight:700;}
+.header-actions{position:absolute;right:15px;display:flex;gap:0px;align-items:left;}
+
+.brand-wrap{display:flex;align-items:left;gap: 12px;}
+  /* ---- Logo Rotation ---- */
+.logo-wrapper {
+  position: relative;
+   width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 3px 3 rgba(0,0,0,0.2);
+  background:rgb(148, 29, 142);
+}
+
+.logo-rotate {
+  position: absolute;
+  top: 0;
+  left: 0;
+   width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 3px 3 rgba(0,0,0,0.2);
+  background:white;
+  
+  /* Shyiramo image nk'inyuma -->
+     Bizasaba ko outer ring izamo background */
+  background-image: url('https://i.postimg.cc/LXHKSshm/logo-og-prove.png');
+  background-size: cover;
+  animation: spin 4s linear infinite;
+  
+  /* Trick: tuzahisha inner part nyuma */
+  mask-image: radial-gradient(circle, transparent 70px black 80px);
+  -webkit-mask-image: radial-gradient(circle, transparent 70px black 80px);
+}
+
+.logo-front {
+  position: absolute;
+  top: 0;
+  left: 0;
+   width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 3px 3 rgba(0,0,0,0.2);
+  background:white;
+}
+  
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+  
+  .app{width:96%; max-width:1300px; margin: 20px auto; display: grid; grid-template-columns: 1fr; gap:20px;}
+  @media(min-width: 900px){
+  .app{
+    grid-template-columns: 3.5fr 1.3fr; /* ⭐ chat nini, tools nto */
+    align-items:start;
+  }
+}
+
+  .container{
+  background:var(--panel);
+  padding:18px;
+  border-radius:16px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.45);
+
+  height: 80vh;              /* ✅ container ihamye */
+  display: flex;
+  flex-direction: column;
+}
+
+  /* Chat UI - Gusa aha niho hafite scroll ntoya ngo bitaba birebire cyane */
+  .output-area{
+  flex: 1;                   /* ⭐ IYI NIYO KEY */
+  overflow-y: auto;          /* scroll inside */
+  overflow-x: hidden;
+
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+  padding-right:10px;
+
+  scroll-behavior:smooth;
+  overscroll-behavior:contain;
+}
+
+  .message{display:flex;flex-direction:column;max-width:85%;position:relative;animation:msgIn 0.3s ease;}
+  @keyframes msgIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
+  .message.user{align-self:flex-start;}
+  .message.assistant{align-self:flex-end;}
+  
+  .bubble{padding:12px 18px;border-radius:16px;font-size:0.96rem;line-height:1.5;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
+  .bubble.user{background:linear-gradient(135deg, var(--bubble-user), #1a60ff);color:white;border-bottom-left-radius:4px;}
+  .bubble.assistant{background:var(--bubble-ai);color:var(--text);border-bottom-right-radius:4px;}
+
+  /* Markdown & Code */
+  .bubble pre { background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid rgba(255,255,255,0.1); }
+  .bubble code { font-family: 'Courier New', monospace; color: var(--accent); background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; }
+
+  /* Thinking Animation */
+  .typing-loader{display:flex;gap:5px;padding:8px 12px;}
+  .dot{width:8px;height:8px;background:var(--accent);border-radius:50%;animation:dotPulse 1.4s infinite ease-in-out both;}
+  .dot:nth-child(1){animation-delay:-0.32s;}
+  .dot:nth-child(2){animation-delay:-0.16s;}
+  @keyframes dotPulse { 0%,80%,100%{transform:scale(0);} 40%{transform:scale(1.1);} }
+
+  /* Buttons */
+  .btn{border:none;border-radius:10px;cursor:pointer;font-weight:600;display:flex;align-items:center;justify-content:center;transition:0.2s;}
+  .btn-ghost{background:rgba(255,255,255,0.06);color:var(--text);width:110px;height:45px;font-size:1rem;}
+  .btn-primary{background:var(--accent);color:#000;padding:0 20px;height:45px;}
+
+  .input-row{display:flex;gap:10px;margin-top:12px;background:rgba(255,255,255,0.03);padding:10px;border-radius:14px;}
+  textarea{flex:1;background:transparent;border:none;color:white;resize:none;outline:none;font-family:inherit;font-size:1rem;height:55px;}
+
+  /* Modal Styles */
+  .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:2000;backdrop-filter: blur(5px);}
+  .modal{background:var(--panel);width:92%;max-width:500px;padding:25px;border-radius:20px;max-height:85vh;overflow-y:auto;position:relative;border: 1px solid rgba(255,255,255,0.1);}
+
+  /* Tool Cards */
+  .tools-panel { display: flex; flex-direction: column; gap: 15px;max-width:340px;justify-self:end;}
+  .card { background: var(--panel); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+  #map { height: 200px; border-radius: 10px; margin-top: 10px; }
+
+/* Message options */
+/* MESSAGE ACTIONS – ALWAYS BELOW MESSAGE */
+/* MESSAGE CONTAINER */
+.message{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+/* ACTIONS – ALWAYS BELOW MESSAGE */
+.msg-actions{
+  display:flex;
+  gap:8px;
+  font-size:0.85rem;
+  opacity:0.9;
+}
+
+/* User actions on left */
+.message.user .msg-actions{
+  justify-content:flex-start;
+}
+
+/* Assistant actions on right */
+.message.assistant .msg-actions{
+  justify-content:flex-end;
+}
+
+/* Buttons */
+.action-btn{
+  background:rgba(255,255,255,0.12);
+  border:none;
+  color:white;
+  padding:5px 7px;
+  border-radius:7px;
+  cursor:pointer;
+}
+
+.action-btn:hover{
+  background:var(--accent);
+  color:#000;
+}
+
+.action-btn.danger{
+  color:#ff6b6b;
+}
+
+/* Very small screens: only delete visible */
+@media(max-width:360px){
+  .msg-actions button:not(.danger){
+    display:none;
+  }
+}
+
+
+
+
+/* Mobile: actions munsi ya message (row imwe) */
+@media(max-width:599px){
+  .msg-actions{
+    justify-content:flex-end;
+    opacity:0.9;
+  }
+}
+
+/* Very small screens: auto-hide except delete */
+@media(max-width:360px){
+  .msg-actions button:not(.danger){
+    display:none;
+  }
+}
+
+.action-btn{
+  background:rgba(255,255,255,0.12);
+  border:none;
+  color:white;
+  padding:4px 6px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.action-btn:hover{
+  background:var(--accent);
+  color:#000;
+}
+
+.action-btn.danger{
+  color:#ff6b6b;
+}
+#themeCycleBtn{
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+[data-theme="midnight"] #themeCycleBtn { color:#33ffc4; }
+[data-theme="sunset"]  #themeCycleBtn { color:#ff7ba0; }
+[data-theme="forest"]  #themeCycleBtn { color:#57ff7b; }
+[data-theme="ocean"]   #themeCycleBtn { color:#41bfff; }
+[data-theme="amber"]   #themeCycleBtn { color:#ffb52e; }
+
+#themeCycleBtn:active{
+  transform: scale(0.9) rotate(15deg);
+}
+/* ===== AI MESSAGE SECTIONS ===== */
+.bubble.assistant h3{
+  margin:12px 0 6px;
+  font-size:0.95rem;
+  color:var(--accent);
+}
+
+.bubble.assistant p{
+  margin:6px 0;
+}
+
+/* CODE AREA */
+.bubble.assistant pre{
+  background:#0b0b15;
+  border-left:4px solid var(--accent);
+  padding:12px;
+  border-radius:10px;
+  overflow-x:auto;
+}
+
+/* INLINE CODE */
+.bubble.assistant code{
+  background:rgba(255,255,255,0.12);
+  padding:2px 6px;
+  border-radius:6px;
+}
+
+/* IMAGE AREA */
+.bubble.assistant img{
+  max-width:100%;
+  border-radius:12px;
+  margin:10px 0;
+  display:block;
+}
+
+/* DIAGRAM BLOCK */
+.diagram-block{
+  background:rgba(255,255,255,0.08);
+  border:1px dashed var(--accent);
+  padding:12px;
+  border-radius:12px;
+  font-family:monospace;
+  white-space:pre-wrap;
+  margin:10px 0;
+}
+
+/* ===== CODE / DIAGRAM COPY ===== */
+.block-wrapper{
+  position:relative;
+}
+
+.copy-btn{
+  position:absolute;
+  top:8px;
+  right:8px;
+  background:rgba(255,255,255,0.15);
+  border:none;
+  color:white;
+  font-size:0.75rem;
+  padding:4px 6px;
+  border-radius:6px;
+  cursor:pointer;
+  opacity:0;
+  transition:0.2s;
+}
+
+.block-wrapper:hover .copy-btn{
+  opacity:1;
+}
+
+.copy-btn:hover{
+  background:var(--accent);
+  color:#000;
+}
+@keyframes popIn{
+  from{transform:scale(0.7);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+/* ===== WELCOME MESSAGE ===== */
+.welcome-message{
+  text-align:center;
+  font-size:1.2rem;          /* paragraph nini */
+  line-height:1.8;
+  padding:25px 20px;
+  margin-bottom:10px;
+
+  background:linear-gradient(
+    135deg,
+    rgba(255,255,255,0.06),
+    rgba(255,255,255,0.02)
+  );
+
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,0.08);
+
+  animation:welcomeFade 0.6s ease;
+}
+
+.welcome-message strong{
+  font-size:1.6rem;          /* Hello NAME nini cyane */
+  color:var(--accent);
+  display:block;
+  margin-bottom:10px;
+}
+
+@keyframes welcomeFade{
+  from{opacity:0;transform:translateY(-10px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.settings-section{
+  margin:15px 0 8px;
+  font-size:0.9rem;
+  color:var(--muted);
+}
+
+.settings-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+  gap:10px;
+}
+
+.settings-row select,
+.settings-row input[type="color"]{
+  background:#000;
+  color:#fff;
+  border:none;
+  padding:6px;
+  border-radius:6px;
+}
+
+/* Toggle switch */
+.switch{
+  position:relative;
+  width:42px;
+  height:22px;
+}
+.switch input{display:none;}
+.slider{
+  position:absolute;
+  inset:0;
+  background:#555;
+  border-radius:20px;
+  cursor:pointer;
+}
+.slider:before{
+  content:"";
+  position:absolute;
+  width:18px;
+  height:18px;
+  left:2px;
+  top:2px;
+  background:white;
+  border-radius:50%;
+  transition:0.2s;
+}
+.switch input:checked + .slider{
+  background:var(--accent);
+}
+.switch input:checked + .slider:before{
+  transform:translateX(20px);
+}
+
+
+</style>
+</head>
+<body data-theme="midnight">
+
+<header>
+  <div class="brand-wrap">
+    <div class="logo-wrapper">
+      <div class="logo-rotate"></div>
+      <img src="https://i.postimg.cc/LXHKSshm/logo-og-prove.png" class="logo-front">
+    </div>
+    <h1 style="margin:0;font-size:1.3rem;color:var(--accent);">ABIN AI</h1>
+  </div>
+  <div class="header-actions" style="display:flex;gap:10px;">
+    <button class="btn btn-ghost" id="themeCycleBtn" title="Change theme">🎨 Color</button>
+    <button class="btn btn-ghost" id="openHistory" title="History">🕒History</button>
+    <button class="btn btn-ghost" id="openSettings" title="Settings">⚙️Settings</button>
+  </div>
+</header>
+
+<div class="app">
+  <div class="container">
+    <div class="output-area" id="mainOutput">
+      
+    </div>
+    
+    <div class="input-row">
+  <button class="btn btn-ghost" id="attachBtn" title="Attach file">➕</button>
+
+  <textarea id="mainInput" placeholder="Andika hano..."></textarea>
+
+  <input type="file" id="fileInput" hidden
+    accept=".txt,.pdf,.doc,.docx,.csv,.json,.md,.xlsx"/>
+
+
+  <div style="display:flex;flex-direction:column;gap:5px;">
+    <button class="btn btn-primary" id="sendBtn">Send</button>
+    <button class="btn btn-ghost" id="micBtn"title="voice input">🎤</button>
+  </div>
+</div>
+
+    <marquee style="font-size:0.8rem;margin-top:10px;color:var(--muted);"> Info Contact:<i data-feather="phone-call"></i> 0792777646, Email:niyonsengaishimweabraham@gmail.com, IG: _𝓐.𝓫.𝓲.𝓷_𝟙𝟙</marquee>
+  </div>
+
+  <div class="tools-panel">
+    <div class="card">
+      <h4 style="margin:0 0 10px 0;">📍 Live Map</h4>
+      <div id="map"></div>
+    </div>
+    <div class="card">
+      <h4 style="margin:0 0 10px 0;">☁️ Weather</h4>
+      <div id="weatherDisplay">Loading weather...</div>
+    </div>
+    <div class="card">
+      <h4 style="margin:0 0 10px 0;">🎙️ Voice output</h4>
+      <select id="voiceSelect" style="width:100%; background:#000; color:#fff; border:none; padding:5px; border-radius:5px;"></select>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<!-- SETTINGS MODAL (Popup imwe) -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal">
+    <!-- Header -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <h3 style="margin:0;color:var(--accent);">⚙️ Settings</h3>
+      <span id="closeSettings" style="cursor:pointer;font-size:24px;">×</span>
+    </div>
+
+    <!-- GENERAL SETTINGS -->
+    <h4 class="settings-section">General</h4>
+
+    <div class="settings-row">
+      <span>Appearance</span>
+      <select id="colorMode">
+        <option value="midnight">System</option>
+        <option value="sunset">Sunset</option>
+        <option value="forest">Forest</option>
+        <option value="ocean">Ocean</option>
+        <option value="amber">Amber</option>
+      </select>
+    </div>
+
+    <div class="settings-row">
+      <span>Accent color</span>
+      <input type="color" id="accentPicker" />
+    </div>
+
+    <div class="settings-row">
+      <span>Language</span>
+      <select id="uiLanguage">
+        <option value="auto">Auto-detect</option>
+        <option value="rw">Kinyarwanda</option>
+        <option value="en">English</option>
+        <option value="fr">Français</option>
+      </select>
+    </div>
+
+    <div class="settings-row">
+      <span>Spoken language</span>
+      <select id="spokenLang">
+        <option value="auto">Auto-detect</option>
+        <option value="rw-RW">Kinyarwanda</option>
+        <option value="en-US">English</option>
+        <option value="fr-FR">Français</option>
+      </select>
+    </div>
+
+    <!-- VOICE SETTINGS -->
+    <h4 class="settings-section">Voice</h4>
+
+    <div class="settings-row">
+      <button class="btn btn-ghost" onclick="testVoice()">▶ Play</button>
+      <select id="voiceSelectSettings"></select>
+    </div>
+
+    <div class="settings-row">
+      <span>Separate voice mode</span>
+      <label class="switch">
+        <input type="checkbox" id="separateVoice">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- Save & Close -->
+    <button class="btn btn-primary" style="width:100%;margin-top:20px;" id="saveCloseSettings">
+      Save & Close
+    </button>
+  </div>
+</div>
+
+
+  <div class="settings-row">
+    <span>Separate voice mode</span>
+    <label class="switch">
+      <input type="checkbox" id="separateVoice">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <button class="btn btn-primary" style="width:100%;margin-top:20px;"
+          id="saveCloseSettings">
+    Save & Close
+  </button>
+</div>
+
+
+
+<div class="modal-overlay" id="historyOverlay">
+  <div class="modal">
+    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+      <h3 style="margin:0;color:var(--accent);">🕒 History</h3>
+      <span class="close-btn" id="closeHistory" style="cursor:pointer; font-size:25px;">&times;</span>
+    </div>
+    <div id="historyContent" style="max-height:300px; overflow-y:auto;"></div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-primary" style="flex:1;" id="exportHistory">Export</button>
+      <button class="btn btn-ghost" style="flex:1;color:#ff5f8a;" id="clearHistory">Clear All</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="welcomeOverlay">
+  <div class="modal" style="text-align:center;">
+    <img src="https://i.postimg.cc/LXHKSshm/logo-og-prove.png"
+         style="width:80px;height:80px;border-radius:50%;margin-bottom:10px;animation:popIn 0.6s ease;">
+    
+    <h2 style="margin:10px 0;color:var(--accent);">Welcome 👋</h2>
+    <p style="font-size:0.9rem;color:var(--muted);">
+      Type your name so that we can continue getting to know each other
+    </p>
+
+    <input id="usernameInput"
+           placeholder="Your name"
+           style="width:100%;padding:10px;border-radius:10px;border:none;margin-top:15px;font-size:1rem;">
+
+    <button class="btn btn-primary"
+            style="width:100%;margin-top:15px;"
+            id="saveUsernameBtn">
+      Continue
+    </button>
+  </div>
+</div>
+
+
+<script>
+
+let SETTINGS = JSON.parse(localStorage.getItem('abin_settings_v2')) || { theme:'midnight', model:'gpt-4o-mini', temp:0.5, tts:'on', voiceIdx:0 };
+let HISTORY = JSON.parse(localStorage.getItem('abin_history_v2')) || [];
+let currentSpeech = null;
+let currentAudioBtn = null;
+
+
+
+const mainOutput = document.getElementById('mainOutput');
+const mainInput = document.getElementById('mainInput');
+const voiceSelect = document.getElementById('voiceSelect');
+
+/* MODALS */
+const toggleM = (id, s) => document.getElementById(id).style.display = s ? 'flex' : 'none';
+document.getElementById('openSettings').onclick = () => toggleM('settingsOverlay', true);
+document.getElementById('closeSettings').onclick = () => toggleM('settingsOverlay', false);
+document.getElementById('saveCloseSettings').onclick = () => toggleM('settingsOverlay', false);
+document.getElementById('openHistory').onclick = () => { renderHistoryList(); toggleM('historyOverlay', true); };
+document.getElementById('closeHistory').onclick = () => toggleM('historyOverlay', false);
+
+function parseDiagrams(html){
+  return html.replace(
+    /<pre><code class="language-diagram">([\s\S]*?)<\/code><\/pre>/g,
+    (_, diagram) => `<div class="diagram-block">${diagram}</div>`
+  );
+    }
+function enhanceBlocks(container){
+  // CODE BLOCKS
+  container.querySelectorAll('pre').forEach(pre => {
+    if(pre.parentElement.classList.contains('block-wrapper')) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'block-wrapper';
+
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = '📋';
+    btn.title = 'Copy code';
+
+    btn.onclick = () => {
+      navigator.clipboard.writeText(pre.innerText);
+      btn.textContent = '✔';
+      setTimeout(()=>btn.textContent='📋', 1200);
+    };
+
+    pre.parentNode.insertBefore(wrapper, pre);
+    wrapper.appendChild(btn);
+    wrapper.appendChild(pre);
+  });
+
+  // DIAGRAM BLOCKS
+  container.querySelectorAll('.diagram-block').forEach(diagram => {
+    if(diagram.parentElement.classList.contains('block-wrapper')) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'block-wrapper';
+
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = '📋';
+    btn.textContent = '📋';
+    btn.title = 'Copy code';
+
+    btn.onclick = () => {
+      navigator.clipboard.writeText(diagram.innerText);
+      btn.textContent = '✔';
+      setTimeout(()=>btn.textContent='📋', 1200);
+    };
+
+    diagram.parentNode.insertBefore(wrapper, diagram);
+    wrapper.appendChild(btn);
+    wrapper.appendChild(diagram);
+  });
+}
+
+
+/* CHAT LOGIC */
+function appendMessage(role, content) {
+  const shouldScroll = isUserAtBottom(mainOutput);
+
+  const msgDiv = document.createElement('div');
+  msgDiv.className = `message ${role}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${role}`;
+
+  // ✅ HANDLE DOWNLOAD FILE RESPONSE AHA
+ if (role === 'assistant' && content.startsWith('DOWNLOAD_FILE:')) {
+  const lines = content.split('\n');
+  const header = lines[0].replace('DOWNLOAD_FILE:', '').trim();
+
+  const [filePart, mimePart] = header.split('|').map(s => s.trim());
+
+  const filename = filePart || 'file.txt';
+  const mime = mimePart || 'text/plain';
+  const fileContent = lines.slice(1).join('\n');
+
+  bubble.innerHTML = `
+    <p><b>📁 File ready</b></p>
+    ${createDownloadLink(filename, fileContent, mime)}
+    <pre>${fileContent}</pre>
+  `;
+
+  msgDiv.appendChild(bubble);
+  mainOutput.appendChild(msgDiv);
+  mainOutput.scrollTop = mainOutput.scrollHeight;
+  return;
+}
+
+  // Normal messages
+  if (role === 'assistant') {
+    let parsed = marked.parse(content);
+    parsed = parseDiagrams(parsed);
+    bubble.innerHTML = parsed;
+    enhanceBlocks(bubble);
+  } else {
+    bubble.innerText = content;
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'msg-actions';
+  actions.innerHTML = role === 'user'
+    ? `
+      <button class="action-btn" onclick="copyMsg(this)">📋</button>
+      <button class="action-btn danger" onclick="deleteMsg(this)">🗑️</button>
+    `
+    : `
+      <button class="action-btn" onclick="playAudio(this)">🔊</button>
+      <button class="action-btn" onclick="copyMsg(this)">📋</button>
+        <button class="action-btn" onclick="replyMsg(this)" title="Reply">↩️</button>
+  <button class="action-btn" onclick="shareMsg(this)" title="Share">📤</button>
+      <button class="action-btn danger" onclick="deleteMsg(this)">🗑️</button>
+    `;
+
+  msgDiv.appendChild(bubble);
+  msgDiv.appendChild(actions);
+  mainOutput.appendChild(msgDiv);
+
+  if (shouldScroll) {
+    mainOutput.scrollTop = mainOutput.scrollHeight;
+  }
+}
+
+
+
+
+function isUserAtBottom(container){
+  return container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+}
+
+
+function showThinking() {
+  const loader = document.createElement('div'); loader.className='message assistant'; loader.id='thinking-bubble';
+  loader.innerHTML=`<div class="bubble assistant"><div class="typing-loader"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  mainOutput.appendChild(loader);
+  mainOutput.scrollTop = mainOutput.scrollHeight;
+}
+
+
+
+
+async function sendMain() {
+  const text = mainInput.value.trim();
+  if (!text && !attachedFileText) return;
+
+  mainInput.value = '';
+  appendMessage('user', text || '📎 File attached');
+  showThinking();
+
+  // 👇 AHA NI HO HASHYIRWA
+  let finalMessage = '';
+
+if (text) {
+  finalMessage += text + '\n\n';
+}
+
+if (attachedFileText) {
+  finalMessage += `The user attached a file.
+
+FILE NAME: ${attachedFileName}
+FILE CONTENT:
+${attachedFileText}
+`;
+}
+
+  try {
+    const res = await fetch('/api', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    model: SETTINGS.model,
+    messages: [
+      { role:'system', content:'You are an AI assistant.' },
+      { role:'user', content: finalMessage }
+    ]
+  })
+});
+
+
+
+    const data = await res.json();
+    document.getElementById('thinking-bubble')?.remove();
+
+    const reply = data.choices[0].message.content;
+    if (!data.choices) {
+  appendMessage('assistant', '❌ AI failed to respond. Check server logs.');
+  return;
+}
+
+    appendMessage('assistant', reply);
+
+    // 🧹 cleanup
+    attachedFileText = '';
+    attachedFileName = '';
+    fileInput.value = '';
+
+  } catch (e) {
+  document.getElementById('thinking-bubble')?.remove();
+  appendMessage(
+    'assistant',
+    '❌ There was a problem with the response.'
+  );
+}
+
+}
+
+/* MAP & WEATHER */
+let map = L.map('map').setView([-1.9441, 30.0619], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+async function fetchWeather() {
+  try {
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-1.94&longitude=30.06&current_weather=true');
+    const data = await res.json();
+    document.getElementById('weatherDisplay').innerHTML = `Kigali: ${data.current_weather.temperature}°C`;
+  } catch(e) { }
+}
+
+let voices = [];
+function loadVoices() {
+  voices = window.speechSynthesis.getVoices();
+  voiceSelect.innerHTML = voices.map((v, i) => `<option value="${i}">${v.name}</option>`).join('');
+}
+window.speechSynthesis.onvoiceschanged = loadVoices;
+
+function speakText(text) {
+  const u = new SpeechSynthesisUtterance(text);
+  if(voices[voiceSelect.value]) u.voice = voices[voiceSelect.value];
+  window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+}
+
+function renderHistoryList() {
+  const list = document.getElementById('historyContent');
+  list.innerHTML = HISTORY.length === 0 ? '<p>No history</p>' : '';
+  HISTORY.slice().reverse().forEach(msg => {
+    const item = document.createElement('div');
+    item.style = "padding:10px; border-bottom:1px solid #333; cursor:pointer;";
+    item.innerHTML = `<small>${msg.date}</small><br>${msg.content.slice(0,50)}...`;
+    item.onclick = () => { mainInput.value = msg.content; toggleM('historyOverlay', false); };
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('sendBtn').onclick = sendMain;
+document.getElementById('colorMode').onchange = (e) => {
+  SETTINGS.theme = e.target.value; document.body.setAttribute('data-theme', SETTINGS.theme);
+  localStorage.setItem('abin_settings_v2', JSON.stringify(SETTINGS));
+};
+document.body.setAttribute('data-theme', SETTINGS.theme);
+fetchWeather(); loadVoices();
+
+
+
+
+
+function getBubble(btn) {
+  return btn.closest('.message').querySelector('.bubble');
+}
+
+/* COPY */
+function copyMsg(btn) {
+  const text = getBubble(btn).innerText;
+  navigator.clipboard.writeText(text);
+}
+
+/* EDIT */
+function editMsg(btn) {
+  const bubble = getBubble(btn);
+  const oldText = bubble.innerText;
+  const newText = prompt("Edit message:", oldText);
+  if (newText !== null) bubble.innerText = newText;
+}
+
+/* DELETE */
+function deleteMsg(btn) {
+  const ok = confirm("Do you wnat to delete this message?");
+  if (!ok) return;
+  btn.closest('.message').remove();
+}
+
+function shareMsg(btn){
+  const text = getBubble(btn).innerText;
+
+  // Encode message
+  const encoded = encodeURIComponent(text);
+
+  // Build shareable link (hindura URL yawe)
+  const shareLink = `${location.origin}${location.pathname}?shared=${encoded}`;
+
+  // Niba device ishyigikira native share
+  if (navigator.share) {
+    navigator.share({
+      title: 'ABIN AI Message',
+      url: shareLink
+    });
+  } else {
+    navigator.clipboard.writeText(shareLink);
+    alert("🔗 Link copied! You can share it with others");
+  }
+}
+
+/* REPLY (Assistant only) */
+function replyMsg(btn) {
+  const text = getBubble(btn).innerText;
+  mainInput.value = text;
+  mainInput.focus();
+}
+
+/* PLAY AUDIO (Assistant only) */
+function playAudio(btn){
+  const text = getBubble(btn).innerText;
+
+  // Niba hari audio iri gukina → ihagarike
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+
+    if (currentAudioBtn) {
+      currentAudioBtn.textContent = '🔊';
+      currentAudioBtn.title = 'Play audio';
+    }
+
+    currentSpeech = null;
+    currentAudioBtn = null;
+    return;
+  }
+
+  // Tangira audio nshya
+  const utter = new SpeechSynthesisUtterance(text);
+
+  if (voices[voiceSelect.value]) {
+    utter.voice = voices[voiceSelect.value];
+  }
+
+  utter.onend = () => {
+    btn.textContent = '🔊';
+    btn.title = 'Play audio';
+    currentSpeech = null;
+    currentAudioBtn = null;
+  };
+
+  utter.onerror = () => {
+    btn.textContent = '⏸';
+    btn.title = 'Play audio';
+    currentSpeech = null;
+    currentAudioBtn = null;
+  };
+
+  // Hagarika indi audio yose yabanje
+  window.speechSynthesis.cancel();
+
+  btn.textContent = '🔊';
+  btn.title = 'Stop audio';
+
+  currentSpeech = utter;
+  currentAudioBtn = btn;
+
+  window.speechSynthesis.speak(utter);
+}
+
+const THEMES = ['midnight', 'sunset', 'forest', 'ocean', 'amber'];
+
+document.getElementById('themeCycleBtn').onclick = () => {
+  const current = document.body.getAttribute('data-theme') || 'midnight';
+  let idx = THEMES.indexOf(current);
+  idx = (idx + 1) % THEMES.length;
+
+  const nextTheme = THEMES[idx];
+  document.body.setAttribute('data-theme', nextTheme);
+
+  SETTINGS.theme = nextTheme;
+  localStorage.setItem('abin_settings_v2', JSON.stringify(SETTINGS));
+};
+
+
+
+function welcomeUser(name) {
+  const welcome = document.createElement('div');
+  welcome.className = 'welcome-message';
+
+  welcome.innerHTML = `
+    <strong> Hello ${name}!</strong>
+    Hello there 👋<br>
+    I am <b>ABIN AI</b>, I can help you with your questions, coding, learning, and providing quick and clear answers.
+    <br>
+    Start by writing your message below 👇
+  `;
+
+  // Shyira hejuru ya chat (top)
+  mainOutput.prepend(welcome);
+}
+function showWelcomeModalIfNeeded(){
+  const name = localStorage.getItem('abin_username');
+
+  if(!name){
+    toggleM('welcomeOverlay', true);
+  } else {
+    welcomeUser(name); // ✅ welcome paragraph only
+  }
+}
+
+document.getElementById('saveUsernameBtn').onclick = () => {
+  const input = document.getElementById('usernameInput');
+  let name = input.value.trim();
+
+  if(!name) name = 'Guest';
+
+  localStorage.setItem('abin_username', name);
+  toggleM('welcomeOverlay', false);
+
+  welcomeUser(name);
+  assistantIntro(name);
+};
+
+document.addEventListener('keydown', (e) => {
+  const settingsOpen =
+    document.getElementById('settingsOverlay').style.display === 'flex';
+
+  if (settingsOpen && e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('saveCloseSettings').click();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  // Windows + H
+  if (e.key.toLowerCase() === 'h' && e.metaKey) {
+    e.preventDefault();
+
+    if (!recognition) return;
+
+    // Toggle mic
+    if (!listening) {
+      recognition.start();
+      listening = true;
+      micBtn.textContent = '🛑';
+    } else {
+      recognition.stop();
+      listening = false;
+      micBtn.textContent = '🎤';
+    }
+  }
+});
+
+
+function assistantIntro(name){
+  appendMessage(
+    'assistant',
+    `Hello **${name}** 👋\n\nHello! I am ABIN AI. How can I help you today?`
+  );
+}
+window.addEventListener('load', () => {
+  fetchWeather();
+  loadVoices();
+  showWelcomeModalIfNeeded();
+});
+
+
+const micBtn = document.getElementById('micBtn');
+
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+let recognition = null;
+let listening = false;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  const spokenLang = document.getElementById('spokenLang');
+
+spokenLang.onchange = ()=>{
+  if(recognition){
+    recognition.lang = spokenLang.value === 'auto'
+      ? 'rw-RW'
+      : spokenLang.value;
+  }
+};
+
+  recognition.continuous = false;
+  recognition.interimResults = false;
+} else {
+  micBtn.disabled = true;
+  micBtn.textContent = '❌';
+  micBtn.title = 'Voice input not supported';
+}
+micBtn.onclick = () => {
+  if (!recognition) return;
+
+  if (listening) {
+    recognition.stop();
+    micBtn.textContent = '🎤';
+    listening = false;
+    return;
+  }
+
+  recognition.start();
+  listening = true;
+  micBtn.textContent = '🛑';
+};
+recognition.onresult = (event) => {
+  const text = event.results[0][0].transcript;
+  mainInput.value = text;
+};
+recognition.onerror = (e) => {
+  console.error('Voice error:', e);
+  micBtn.textContent = '🎤';
+  listening = false;
+};
+
+recognition.onend = () => {
+  micBtn.textContent = '🎤';
+  listening = false;
+};
+
+mainInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault(); // irinde newline
+    sendMain();         // send message
+  }
+});
+const attachBtn = document.getElementById('attachBtn');
+const fileInput = document.getElementById('fileInput');
+
+attachBtn.onclick = () => fileInput.click();
+let attachedFileText = '';
+let attachedFileName = '';
+let hasFile = false;
+
+
+
+fileInput.onchange = async () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  attachedFileName = file.name;
+
+  const supported =
+  file.type === 'text/plain' ||
+  file.type === 'application/pdf' ||
+  file.type === 'text/csv' ||
+  file.type === 'application/json' ||
+  file.name.endsWith('.md') ||
+  file.name.endsWith('.docx') ||
+  file.name.endsWith('.xlsx');
+
+
+  if (!supported) {
+    attachedFileText = '[This file type is not yet supported for reading]';
+    appendMessage('user', `📎 Attached file: **${attachedFileName}**`);
+    return;
+  }
+
+  // PDF
+  if (file.type === 'application/pdf') {
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(item => item.str).join(' ') + '\n';
+    }
+    attachedFileText = text;
+  }
+
+  // DOCX
+  else if (file.name.endsWith('.docx')) {
+    const buffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+    attachedFileText = result.value || '[DOCX has no readable text]';
+  }
+  else if (file.name.endsWith('.xlsx')) {
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: 'array' });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  attachedFileText = XLSX.utils.sheet_to_csv(sheet);
+}
+
+
+  // CSV / TXT / MD / JSON
+  else {
+    attachedFileText = await file.text();
+  }
+
+ appendMessage('user', `📎 Attached file: **${attachedFileName}**`);
+
+appendMessage(
+  'assistant',
+  `📄 **File loaded successfully**\n\n**${attachedFileName}** It was read well. Now you can ask questions related to it.`
+);
+
+};
+
+
+function createDownloadLink(filename, content, mime='text/plain') {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+
+  return `<a href="${url}" download="${filename}" style="
+    display:inline-block;
+    margin:10px 0;
+    padding:8px 14px;
+    background:var(--accent);
+    color:#000;
+    border-radius:8px;
+    text-decoration:none;
+    font-weight:600;
+  ">
+    ⬇️ Download ${filename}
+  </a>`;
+}
+function loadSharedMessage(){
+  const params = new URLSearchParams(window.location.search);
+  const shared = params.get('shared');
+
+  if(shared){
+    const text = decodeURIComponent(shared);
+
+    appendMessage('assistant', text);
+
+    // Siba query kugira ngo itisubiramo
+    history.replaceState({}, document.title, location.pathname);
+  }
+}
+
+window.addEventListener('load', loadSharedMessage);
+
+document.getElementById('accentPicker').oninput = (e)=>{
+  document.documentElement.style.setProperty('--accent', e.target.value);
+};
+function testVoice(){
+  speakText("Hello, this is ABIN AI voice test.");
+}
+document.getElementById('separateVoice').onchange = (e)=>{
+  SETTINGS.separateVoice = e.target.checked;
+  localStorage.setItem('abin_settings_v2', JSON.stringify(SETTINGS));
+};
+
+
+</script>
+</body>
+
+</html>
+
+
+
+
