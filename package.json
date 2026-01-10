@@ -1,0 +1,13 @@
+{
+  "name": "abin-ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo \"No build needed\""
+  },
+  "dependencies": {
+    "openai": "^4.30.0"
+  }
+}
