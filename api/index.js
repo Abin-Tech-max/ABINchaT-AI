@@ -16,14 +16,24 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Messages field is required and must be an array" });
     }
 
-    const completion = await openai.chat.completions.create({
-      model: model || "gpt-4o-mini",
-      messages,
-      temperature: 0.7,
-      max_tokens: 2000,
-    });
+    const response = await openai.responses.create({
+  model: model || "gpt-4o-mini",
+  input: messages.map(m => ({
+    role: m.role,
+    content: [{ type: "text", text: m.content }]
+  }))
+});
 
-    res.status(200).json(completion);
+res.status(200).json({
+  choices: [
+    {
+      message: {
+        content: response.output_text
+      }
+    }
+  ]
+});
+
   } catch (err) {
     console.error("OpenAI error:", err);
     res.status(500).json({
@@ -32,3 +42,4 @@ export default async function handler(req, res) {
     });
   }
 }
+
