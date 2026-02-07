@@ -816,15 +816,21 @@ ${attachedFileText}
 
 
     const data = await res.json();
-    document.getElementById('thinking-bubble')?.remove();
 
-    const reply = data.choices[0].message.content;
-    if (!data.choices) {
-  appendMessage('assistant', '❌ AI failed to respond. Check server logs.');
+document.getElementById('thinking-bubble')?.remove();
+
+if (!data.choices || !data.choices[0]) {
+  appendMessage(
+    'assistant',
+    '❌ AI ntisubije. Reba logs muri Vercel.'
+  );
   return;
 }
 
-    appendMessage('assistant', reply);
+const reply = data.choices[0].message.content;
+appendMessage('assistant', reply);
+
+    
 
     // 🧹 cleanup
     attachedFileText = '';
@@ -1278,6 +1284,7 @@ document.getElementById('separateVoice').onchange = (e)=>{
 </body>
 
 </html>
+
 
 
 
